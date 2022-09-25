@@ -1,0 +1,46 @@
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+
+## @params: [JOB_NAME]
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+## @type: DataSource
+## @args: [database = "s3-db", table_name = "all_sales_csv", transformation_ctx = "datasource0"]
+## @return: datasource0
+## @inputs: []
+datasource0 = glueContext.create_dynamic_frame.from_catalog(database = "s3-db", table_name = "all_sales_csv", transformation_ctx = "datasource0")
+## @type: ApplyMapping
+## @args: [mapping = [("median_sale_price", "double", "median_sale_price", "int"), ("median_list_price", "double", "median_list_price", "int"), ("median_list_ppsf", "double", "median_list_ppsf", "string"), ("homes_sold", "long", "homes_sold", "int"), ("pending_sales", "long", "pending_sales", "int"), ("new_listings", "long", "new_listings", "int"), ("inventory", "long", "inventory", "int"), ("months_of_supply", "double", "months_of_supply", "int"), ("median_dom", "long", "median_dom", "int"), ("avg_sale_to_list", "double", "avg_sale_to_list", "string"), ("sold_above_list", "double", "sold_above_list", "string"), ("price_drops", "double", "price_drops", "string"), ("off_market_in_two_weeks", "double", "off_market_in_two_weeks", "int"), ("region", "string", "region", "string"), ("property_type", "string", "property_type", "string"), ("state", "string", "state", "string")], transformation_ctx = "applymapping1"]
+## @return: applymapping1
+## @inputs: [frame = datasource0]
+applymapping1 = ApplyMapping.apply(frame = datasource0, mappings = [("median_sale_price", "double", "median_sale_price", "int"), ("median_list_price", "double", "median_list_price", "int"), ("median_list_ppsf", "double", "median_list_ppsf", "string"), ("homes_sold", "long", "homes_sold", "int"), ("pending_sales", "long", "pending_sales", "int"), ("new_listings", "long", "new_listings", "int"), ("inventory", "long", "inventory", "int"), ("months_of_supply", "double", "months_of_supply", "int"), ("median_dom", "long", "median_dom", "int"), ("avg_sale_to_list", "double", "avg_sale_to_list", "string"), ("sold_above_list", "double", "sold_above_list", "string"), ("price_drops", "double", "price_drops", "string"), ("off_market_in_two_weeks", "double", "off_market_in_two_weeks", "int"), ("region", "string", "region", "string"), ("property_type", "string", "property_type", "string"), ("state", "string", "state", "string")], transformation_ctx = "applymapping1")
+## @type: SelectFields
+## @args: [paths = ["off_market_in_two_weeks", "months_of_supply", "median_sale_price", "median_dom", "inventory", "median_list_price", "median_list_ppsf", "pending_sales", "new_listings", "sold_above_list", "property_type", "homes_sold", "avg_sale_to_list", "state", "region", "price_drops"], transformation_ctx = "selectfields2"]
+## @return: selectfields2
+## @inputs: [frame = applymapping1]
+selectfields2 = SelectFields.apply(frame = applymapping1, paths = ["off_market_in_two_weeks", "months_of_supply", "median_sale_price", "median_dom", "inventory", "median_list_price", "median_list_ppsf", "pending_sales", "new_listings", "sold_above_list", "property_type", "homes_sold", "avg_sale_to_list", "state", "region", "price_drops"], transformation_ctx = "selectfields2")
+## @type: ResolveChoice
+## @args: [choice = "MATCH_CATALOG", database = "aws-rds", table_name = "real_estate_all_sales", transformation_ctx = "resolvechoice3"]
+## @return: resolvechoice3
+## @inputs: [frame = selectfields2]
+resolvechoice3 = ResolveChoice.apply(frame = selectfields2, choice = "MATCH_CATALOG", database = "aws-rds", table_name = "real_estate_all_sales", transformation_ctx = "resolvechoice3")
+## @type: ResolveChoice
+## @args: [choice = "make_cols", transformation_ctx = "resolvechoice4"]
+## @return: resolvechoice4
+## @inputs: [frame = resolvechoice3]
+resolvechoice4 = ResolveChoice.apply(frame = resolvechoice3, choice = "make_cols", transformation_ctx = "resolvechoice4")
+## @type: DataSink
+## @args: [database = "aws-rds", table_name = "real_estate_all_sales", transformation_ctx = "datasink5"]
+## @return: datasink5
+## @inputs: [frame = resolvechoice4]
+datasink5 = glueContext.write_dynamic_frame.from_catalog(frame = resolvechoice4, database = "aws-rds", table_name = "real_estate_all_sales", transformation_ctx = "datasink5")
+job.commit()
